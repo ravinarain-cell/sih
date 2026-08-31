@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Timetable Generator</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #f4f7fb;
+        color: #1d2a39;
+      }
+      .container {
+        max-width: 1100px;
+        margin: 32px auto;
+        padding: 24px;
+      }
+      h1 {
+        margin-bottom: 24px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1.1fr 1fr;
+        gap: 24px;
+      }
+      .panel {
+        background: white;
+        border-radius: 12px;
+        padding: 18px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      }
+      textarea {
+        width: 100%;
+        min-height: 520px;
+        resize: vertical;
+        font-family: Consolas, monospace;
+        font-size: 14px;
+        border: 1px solid #cfd8e3;
+        border-radius: 8px;
+        padding: 12px;
+      }
+      button {
+        margin-top: 16px;
+        background: #2563eb;
+        color: white;
+        border: none;
+        padding: 12px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      button:hover { background: #1d4ed8; }
+      pre {
+        white-space: pre-wrap;
+        word-break: break-word;
+        background: #0f172a;
+        color: #e2e8f0;
+        padding: 16px;
+        border-radius: 8px;
+        min-height: 520px;
+        overflow: auto;
+      }
+      .status {
+        margin-top: 12px;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Timetable Generator</h1>
+      <div class="grid">
+        <div class="panel">
+          <h2>Payload JSON</h2>
+          <textarea id="payload">
+{
+  "teachers": [
+    {
+      "teacher_id": "T1",
+      "name": "Dr. Sharma",
+      "availability": ["Monday 09:00", "Monday 10:00"]
+    },
+    {
+      "teacher_id": "T2",
+      "name": "Prof. Gupta",
+      "availability": ["Tuesday 09:00", "Tuesday 10:00"]
+    }
+  ],
+  "rooms": [
+    {
+      "room_id": "R1",
+      "name": "Main Lecture Hall",
+      "capacity": 60,
+      "availability": ["Monday 09:00", "Monday 10:00", "Tuesday 09:00", "Tuesday 10:00"]
+    },
+    {
+      "room_id": "R2",
+      "name": "Science Lab",
+      "capacity": 40,
+      "availability": ["Monday 09:00", "Monday 10:00", "Tuesday 09:00", "Tuesday 10:00"]
+    }
+  ],
+  "subjects": [
+    {
+      "subject_id": "S1",
+      "name": "Advanced Mathematics",
+      "teacher_id": "T1",
+      "availability": []
+    },
+    {
+      "subject_id": "S2",
+      "name": "Physics",
+      "teacher_id": "T2",
+      "availability": []
+    }
+  ],
+  "batches": [
+    {
+      "batch_id": "B1",
+      "name": "Section A",
+      "size": 35,
+      "availability": []
+    },
+    {
+      "batch_id": "B2",
+      "name": "Section B",
+      "size": 20,
+      "availability": []
+    }
+  ],
+  "availability_constraints": {}
+}
+          </textarea>
+          <button id="generateBtn">Generate Timetable</button>
+          <div id="status" class="status"></div>
+        </div>
+        <div class="panel">
+          <h2>Response</h2>
+          <pre id="response">{}</pre>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const generateBtn = document.getElementById('generateBtn');
+      const payloadBox = document.getElementById('payload');
+      const responseBox = document.getElementById('response');
+      const statusBox = document.getElementById('status');
+
+      generateBtn.addEventListener('click', async () => {
+        try {
+          statusBox.textContent = 'Sending request...';
+          const payload = JSON.parse(payloadBox.value);
+          const response = await fetch('http://127.0.0.1:8000/generate-timetable', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          });
+
+          const result = await response.json();
+          responseBox.textContent = JSON.stringify(result, null, 2);
+
+          if (!response.ok) {
+            statusBox.textContent = 'Request failed.';
+          } else {
+            statusBox.textContent = 'Timetable generated successfully.';
+          }
+        } catch (err) {
+          statusBox.textContent = 'Invalid JSON or request failed.';
+          responseBox.textContent = String(err);
+        }
+      });
+    </script>
+  </body>
+</html>
