@@ -252,7 +252,7 @@
         try {
           statusBox.textContent = 'Sending request...';
           const payload = JSON.parse(payloadBox.value);
-          const response = await fetch('http://127.0.0.1:8000/generate-timetable', {
+          const response = await fetch('/generate-timetable', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
