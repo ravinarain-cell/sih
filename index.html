@@ -31,6 +31,56 @@
         padding: 18px;
         box-shadow: 0 2px 10px rgba(0,0,0,0.08);
       }
+      .schedule-wrap {
+        overflow-x: auto;
+      }
+      .schedule {
+        width: 100%;
+        min-width: 720px;
+        border-collapse: collapse;
+        table-layout: fixed;
+      }
+      .schedule th,
+      .schedule td {
+        border: 1px solid #dbe3ed;
+        padding: 8px;
+        vertical-align: top;
+      }
+      .schedule th {
+        background: #eff6ff;
+        color: #1e3a8a;
+        font-size: 13px;
+      }
+      .schedule th:first-child,
+      .schedule td:first-child {
+        width: 86px;
+        background: #f8fafc;
+        color: #475569;
+        font-weight: 600;
+      }
+      .schedule td {
+        height: 82px;
+        background: #ffffff;
+      }
+      .entry {
+        background: #dbeafe;
+        border-left: 4px solid #2563eb;
+        border-radius: 6px;
+        color: #172554;
+        font-size: 12px;
+        line-height: 1.4;
+        padding: 7px;
+      }
+      .entry strong {
+        display: block;
+        font-size: 13px;
+        margin-bottom: 3px;
+      }
+      .empty-state {
+        color: #64748b;
+        padding: 36px 12px;
+        text-align: center;
+      }
       textarea {
         width: 100%;
         min-height: 520px;
@@ -137,8 +187,8 @@
           <div id="status" class="status"></div>
         </div>
         <div class="panel">
-          <h2>Response</h2>
-          <pre id="response">{}</pre>
+          <h2>Weekly Timetable</h2>
+          <div id="response" class="empty-state">Generate a timetable to see the schedule.</div>
         </div>
       </div>
     </div>
@@ -148,6 +198,55 @@
       const payloadBox = document.getElementById('payload');
       const responseBox = document.getElementById('response');
       const statusBox = document.getElementById('status');
+
+      const days = ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5'];
+      const hours = Array.from({ length: 8 }, (_, index) => index + 9);
+
+      function renderTimetable(entries) {
+        if (!entries.length) {
+          responseBox.innerHTML = '<div class="empty-state">No timetable entries were returned.</div>';
+          return;
+        }
+
+        const entriesBySlot = new Map();
+        entries.forEach((entry) => {
+          if (!entriesBySlot.has(entry.slot)) entriesBySlot.set(entry.slot, []);
+          entriesBySlot.get(entry.slot).push(entry);
+        });
+
+        const table = document.createElement('table');
+        table.className = 'schedule';
+        table.innerHTML = `
+          <thead>
+            <tr>
+              <th>Time</th>
+              ${days.map((day) => `<th>${day}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${hours.map((hour) => `
+              <tr>
+                <td>${String(hour).padStart(2, '0')}:00</td>
+                ${days.map((day) => {
+                  const slot = `${day} ${String(hour).padStart(2, '0')}:00`;
+                  const slotEntries = entriesBySlot.get(slot) || [];
+                  return `<td>${slotEntries.map((entry) => `
+                    <div class="entry">
+                      <strong>${entry.subject_id || 'Subject'}</strong>
+                      <div>${entry.teacher_id || 'No teacher'}</div>
+                      <div>${entry.room_id || 'No room'} · ${entry.batch_id || 'No batch'}</div>
+                    </div>
+                  `).join('')}</td>`;
+                }).join('')}
+              </tr>
+            `).join('')}
+          </tbody>`;
+        responseBox.innerHTML = '';
+        const scheduleWrap = document.createElement('div');
+        scheduleWrap.className = 'schedule-wrap';
+        scheduleWrap.appendChild(table);
+        responseBox.appendChild(scheduleWrap);
+      }
 
       generateBtn.addEventListener('click', async () => {
         try {
@@ -162,11 +261,12 @@
           });
 
           const result = await response.json();
-          responseBox.textContent = JSON.stringify(result, null, 2);
 
           if (!response.ok) {
+            responseBox.textContent = JSON.stringify(result, null, 2);
             statusBox.textContent = 'Request failed.';
           } else {
+            renderTimetable(result.timetable || []);
             statusBox.textContent = 'Timetable generated successfully.';
           }
         } catch (err) {
