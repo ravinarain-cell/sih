@@ -6,7 +6,8 @@ from typing import Any
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from pathlib import Path
 from pydantic import BaseModel, Field
 from sqlalchemy import DateTime, ForeignKey, String, create_engine, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, relationship
@@ -285,12 +286,15 @@ def _timetable_response(timetable: Timetable) -> dict[str, Any]:
 
 @app.get("/")
 def read_root():
-    return {"message": "Timetable API is running."}
+    return RedirectResponse(url="/ui")
 
 
 @app.get("/ui")
 def ui_page():
-    return FileResponse("index.html")
+    index_path = Path(__file__).parent / "index.html"
+    if not index_path.is_file():
+        raise HTTPException(status_code=404, detail="Frontend file not found")
+    return FileResponse(index_path)
 
 
 @app.post("/generate-timetable")
